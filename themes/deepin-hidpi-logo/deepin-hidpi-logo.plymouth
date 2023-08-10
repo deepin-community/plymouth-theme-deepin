@@ -1,8 +1,13 @@
 [Plymouth Theme]
-Name=Deepin-logo
-Description=Deepin-logo plugin. 
-ModuleName=script
+Name=deepin-hidpi-logo
+Description=Deepin-logo hidpi plugin. 
+ModuleName=two-step
 
-[script]
+[two-step]
 ImageDir=/usr/share/plymouth/themes/deepin-hidpi-logo
-ScriptFile=/usr/share/plymouth/themes/deepin-hidpi-logo/deepin-hidpi-logo.script
+BackgroundStartColor=0x000000
+BackgroundEndColor=0x000000
+HorizontalAlignment=.5
+Transition=merge-fade
+TransitionDuration=0.5
+

@@ -1,8 +1,12 @@
 [Plymouth Theme]
-Name=Deepin-logo
-Description=Deepin-logo plugin. 
-ModuleName=script
+Name=deepin-logo
+Description=Deepin Logo
+ModuleName=two-step
 
-[script]
+[two-step]
 ImageDir=/usr/share/plymouth/themes/deepin-logo
-ScriptFile=/usr/share/plymouth/themes/deepin-logo/deepin-logo.script
+BackgroundStartColor=0x000000
+BackgroundEndColor=0x000000
+HorizontalAlignment=.5
+Transition=merge-fade
+TransitionDuration=0.5
