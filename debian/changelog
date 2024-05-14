@@ -1,3 +1,9 @@
+plymouth-theme-deepin (23~rc) unstable; urgency=medium
+
+  * chore: update the logo of deepin-logo and deepin-hidpi-logo
+
+ -- zsien <quezhiyong@deepin.org>  Tue, 14 May 2024 16:21:11 +0800
+
 plymouth-theme-deepin (23~beta3) unstable; urgency=medium
 
   * Fix resolution of hidpi-ssd-logo. Previously 300x100, now 600x200.
