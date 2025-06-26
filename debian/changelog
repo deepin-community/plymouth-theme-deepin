@@ -1,3 +1,9 @@
+plymouth-theme-deepin (23.00.01) unstable; urgency=medium
+
+  * fix: reset position of message
+
+ --  <liangbo@uniontech.org>  Thu, 26 Jun 2025 11:17:43 +0800
+
 plymouth-theme-deepin (23~rc) unstable; urgency=medium
 
   * chore: update the logo of deepin-logo and deepin-hidpi-logo
