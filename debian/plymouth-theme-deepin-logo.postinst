@@ -1,51 +1,85 @@
-#!/bin/sh -e
-# This script can be called in the following ways:
-#
-# After the package was installed:
-#       <postinst> configure <old-version>
-#
-#
-# If prerm fails during upgrade or fails on failed upgrade:
-#       <old-postinst> abort-upgrade <new-version>
-#
-# If prerm fails during deconfiguration of a package:
-#       <postinst> abort-deconfigure in-favour <new-package> <version>
-#                  removing <old-package> <version>
-#
-# If prerm fails during replacement due to conflict:
-#       <postinst> abort-remove in-favour <new-package> <version>
+#!/bin/sh
+set -e
 
+# Function to compute the recommended plymouth theme based on OS and display scale
+get_recommended_theme() {
+    local OS_ID="deepin"
+    if [ -f /etc/os-release ]; then
+        . /etc/os-release
+        case "$ID" in
+            uos|Uos|UOS) OS_ID="uos" ;;
+            *)           OS_ID="deepin" ;;
+        esac
+    fi
 
+    local USE_HIDPI=0
+    if [ -f /etc/lightdm/lightdm-deepin-greeter.conf ]; then
+        local ScreenScaleFactor=$(sed -n '/^[[:space:]]*ScreenScaleFactor[[:space:]]*=/ {
+            s/.*=[[:space:]]*//
+            s/[[:space:]]*$//
+            p
+        }' /etc/lightdm/lightdm-deepin-greeter.conf)
+
+        if [ -n "$ScreenScaleFactor" ]; then
+            if awk "BEGIN { exit ($ScreenScaleFactor >= 1.75) ? 0 : 1 }"; then
+                USE_HIDPI=1
+            fi
+        fi
+    fi
+
+    case "$OS_ID:$USE_HIDPI" in
+        "uos:1") echo "uos-hidpi-ssd-logo" ;;
+        "uos:0") echo "uos-ssd-logo" ;;
+        "deepin:1") echo "deepin-hidpi-logo" ;;
+        "deepin:0"|*) echo "deepin-logo" ;;
+    esac
+}
+
+# Function to apply the recommended theme
+set_default_theme() {
+    local THEME
+    THEME=$(get_recommended_theme)
+    echo "Setting plymouth theme to: $THEME"
+    plymouth-set-default-theme "$THEME"
+}
+
+# Helper: safely read current theme from config (strip whitespace, ignore comments)
+get_current_theme() {
+    sed -n 's/^[[:space:]]*Theme[[:space:]]*=[[:space:]]*//p' /etc/plymouth/plymouthd.conf 2>/dev/null | head -n1 || echo ""
+}
+
+# Main logic
 case "$1" in
     configure)
-	DISK_INFO=`lsblk  -P -o NAME,MOUNTPOINT,PKNAME|grep 'MOUNTPOINT="/"'`|| DISK_INFO='NAME="unknow" MOUNTPOINT="/" PKNAME="unknow"'
-	_DISK=${DISK_INFO#*PKNAME=\"}
-	DISK=${_DISK%%\"}
-	FILEPATH=/sys/block/${DISK}/queue/rotational
-	[ -e ${FILEPATH} ] && read CHECK < ${FILEPATH}
-	plymouth-set-default-theme deepin-logo
-	[ -n $CHECK ] && [ x$CHECK = "x0" ] && plymouth-set-default-theme deepin-logo
-	[ -n $CHECK ] && [ x$CHECK = "x1" ] && plymouth-set-default-theme deepin-logo
-	[ -n $CHECK ] && [ x$CHECK = "x0" ] && [ -f /etc/lightdm/lightdm-deepin-greeter.conf ] && ScreenScaleFactor=`sed '/^ScreenScaleFactor=/!d;s/.*=//' /etc/lightdm/lightdm-deepin-greeter.conf` && if [ $ScreenScaleFactor = "1.75" ] || [ $ScreenScaleFactor = "2" ]
-	then
-		plymouth-set-default-theme deepin-hidpi-logo
-	fi
-	[ -n $CHECK ] && [ x$CHECK = "x1" ] && [ -f /etc/lightdm/lightdm-deepin-greeter.conf ] && ScreenScaleFactor=`sed '/^ScreenScaleFactor=/!d;s/.*=//' /etc/lightdm/lightdm-deepin-greeter.conf` && if [ $ScreenScaleFactor = "1.75" ] || [ $ScreenScaleFactor = "2" ]
-	then
-		plymouth-set-default-theme deepin-hidpi-logo
-	fi
-	if which update-initramfs > /dev/null 2>&1
-	then
-		update-initramfs -u -k all
-	fi
-	;;
-    abort-upgrade|abort-deconfigure|abort-remove)
-	;;
+        # On initial install or reconfigure, always set theme and update initramfs
+        set_default_theme
+        update-initramfs -u -k all
+        ;;
+
+    triggered)
+        # Only act if current theme is one of our managed themes
+        CURRENT_THEME=$(get_current_theme)
+        case "$CURRENT_THEME" in
+            deepin-*|uos-*|emerald)
+                RECOMMENDED_THEME=$(get_recommended_theme)
+                if [ "$CURRENT_THEME" != "$RECOMMENDED_THEME" ]; then
+                    echo "Theme mismatch: current='$CURRENT_THEME', recommended='$RECOMMENDED_THEME'"
+                    set_default_theme
+                    update-initramfs -u -k all
+                else
+                    echo "Theme already correct: $CURRENT_THEME"
+                fi
+                ;;
+            *)
+                # User has chosen a custom theme; do nothing
+                echo "Custom theme detected ('$CURRENT_THEME'), skipping update."
+                ;;
+        esac
+        ;;
+
     *)
-	echo "$0 called with unknown argument \`$1'" 1>&2
-	exit 1
-	;;
+        # Ignore other dpkg actions (abort-upgrade, etc.)
+        ;;
 esac
 
-#DEBHELPER#
 exit 0

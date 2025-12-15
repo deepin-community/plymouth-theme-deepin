@@ -28,6 +28,15 @@ logo.x = Window.GetX() + Window.GetWidth() / 2 - logo.image.GetWidth() / 2;
 logo.y = Window.GetY() + Window.GetHeight() / 2 - logo.image.GetHeight() / 2;
 logo.sprite.SetPosition(logo.x, logo.y, 10000);
 
+fun hotplug_callback ()
+{
+  logo.x = Window.GetX() + Window.GetWidth() / 2 - logo.image.GetWidth() / 2;
+  logo.y = Window.GetY() + Window.GetHeight() / 2 - logo.image.GetHeight() / 2;
+  logo.sprite.SetPosition(logo.x, logo.y, 10000);
+}
+  
+Plymouth.SetDisplayHotplugFunction (hotplug_callback);
+
 boot_opacity = 0.3;
 boot_flag = 1;
 fun boot_callback()
@@ -78,48 +87,81 @@ status = "normal";
 
 fun dialog_setup()
   {
-    local.box;
-    local.lock;
     local.entry;
+    local.enter;
+    local.bullet_image;
 
-    box.image = Image("box.png");
-    lock.image = Image("lock.png");
     entry.image = Image("entry.png");
+    enter.image = Image("enter.png");
+    bullet_image = Image("bullet.png");
+    if (Window.GetHeight() >= 1080)
+    {
+      entry.image = entry.image.Scale (Window.GetWidth() * 212 / 1920, entry.image.GetHeight() * Window.GetWidth() * 212 / 1920 / entry.image.GetWidth());
+      bullet_image = bullet_image.Scale(Window.GetWidth() * 6 / 1920, Window.GetHeight() * 6 / 1080);
+      enter.image = enter.image.Scale(Window.GetWidth() * 16 / 1920, Window.GetHeight() * 16 / 1080);
+    }
 
-    box.sprite = Sprite(box.image);
-    box.x = Window.GetX() + Window.GetWidth()  / 2 - box.image.GetWidth ()/2;
-    box.y = Window.GetY() + Window.GetHeight() / 2 - box.image.GetHeight()/2;
-    box.z = 10000;
-    box.sprite.SetPosition(box.x, box.y, box.z);
-
-    lock.sprite = Sprite(lock.image);
-    lock.x = box.x + box.image.GetWidth()/2 - (lock.image.GetWidth() + entry.image.GetWidth()) / 2;
-    lock.y = box.y + box.image.GetHeight()/2 - lock.image.GetHeight()/2;
-    lock.z = box.z + 1;
-    lock.sprite.SetPosition(lock.x, lock.y, lock.z);
 
     entry.sprite = Sprite(entry.image);
-    entry.x = lock.x + lock.image.GetWidth();
-    entry.y = box.y + box.image.GetHeight()/2 - entry.image.GetHeight()/2;
-    entry.z = box.z + 1;
+    entry.x = Window.GetX() + Window.GetWidth() / 2 - entry.image.GetWidth() / 2;
+    entry.y = Window.GetY() + Window.GetHeight() * 10 / 16 - entry.image.GetHeight() / 2;
+    entry.z = 10000;
     entry.sprite.SetPosition(entry.x, entry.y, entry.z);
 
-    global.dialog.box = box;
-    global.dialog.lock = lock;
+    enter.sprite = Sprite(enter.image);
+    enter.x = entry.x + entry.image.GetWidth() - enter.image.GetWidth() - 6 * Window.GetWidth() / 1920;
+    enter.y = Window.GetY() + Window.GetHeight() * 10 / 16 - enter.image.GetHeight() / 2;
+    enter.z = entry.z + 1;
+    enter.sprite.SetPosition(enter.x, enter.y, enter.z);
+
     global.dialog.entry = entry;
-    global.dialog.bullet_image = Image("bullet.png");
+    global.dialog.enter = enter;
+    global.dialog.bullet_image = bullet_image;
+
     dialog_opacity (1);
   }
 
 fun dialog_opacity(opacity)
   {
-    dialog.box.sprite.SetOpacity (opacity);
-    dialog.lock.sprite.SetOpacity (opacity);
+    dialog.enter.sprite.SetOpacity (opacity);
     dialog.entry.sprite.SetOpacity (opacity);
+    dialog.prompt.sprite.SetOpacity (opacity);
+    dialog.plaintext.sprite.SetOpacity (opacity);
     for (index = 0; dialog.bullet[index]; index++)
       {
         dialog.bullet[index].sprite.SetOpacity(opacity);
       }
+  }
+
+
+fun bullets_opacity(opacity)
+  {
+    for (index = 0; dialog.bullet[index]; index++)
+      {
+        dialog.bullet[index].sprite.SetOpacity(opacity);
+      }
+  }
+
+fun plaintext_opacity(opacity)
+  {
+    if (dialog.plaintext)
+      {
+        dialog.plaintext.sprite.SetOpacity (opacity);
+      }
+  }
+
+fun prompt_setup(prompt)
+  {
+    dialog.prompt.image = Image.Text(prompt, 1, 1, 1);
+    if (dialog.prompt.image.GetHeight() < Window.GetHeight() * 17 / 1080)
+    {
+      dialog.prompt.image = dialog.prompt.image.Scale(dialog.prompt.image.GetWidth() * Window.GetHeight() * 17 / 1080 / dialog.prompt.image.GetHeight(), Window.GetHeight() * 17 / 1080);
+    }
+    dialog.prompt.sprite = Sprite(dialog.prompt.image);
+    dialog.prompt.x = Window.GetX() + Window.GetWidth()  / 2 - dialog.prompt.image.GetWidth ()/2;
+    dialog.prompt.y = Window.GetY() + Window.GetHeight() * 9 / 16 - dialog.prompt.image.GetHeight()/2;
+    dialog.prompt.z = 10000;
+    dialog.prompt.sprite.SetPosition(dialog.prompt.x, dialog.prompt.y, dialog.prompt.z);
   }
 
 fun display_normal_callback ()
@@ -136,36 +178,86 @@ fun display_password_callback (prompt, bullets)
 	dialog_setup();
     else
 	dialog_opacity(1);
+
+    prompt_setup(prompt);
+    plaintext_opacity(0);
     for (index = 0; dialog.bullet[index] || index < bullets; index++)
       {
         if (!dialog.bullet[index])
           {
             dialog.bullet[index].sprite = Sprite(dialog.bullet_image);
-            dialog.bullet[index].x = dialog.entry.x + index * dialog.bullet_image.GetWidth();
+            dialog.bullet[index].x = dialog.entry.x + Window.GetWidth() * 8 / 1920 + index * (dialog.bullet_image.GetWidth() + Window.GetWidth() * 11 / 1920);
             dialog.bullet[index].y = dialog.entry.y + dialog.entry.image.GetHeight() / 2 - dialog.bullet_image.GetHeight() / 2;
             dialog.bullet[index].z = dialog.entry.z + 1;
             dialog.bullet[index].sprite.SetPosition(dialog.bullet[index].x, dialog.bullet[index].y, dialog.bullet[index].z);
           }
-        if (index < bullets && index <= 28)
+        if (index < bullets && dialog.bullet[index] && dialog.bullet[index].x + dialog.bullet_image.GetWidth() < dialog.enter.x)
           dialog.bullet[index].sprite.SetOpacity(1);
         else
           dialog.bullet[index].sprite.SetOpacity(0);
       }
   }
 
+fun display_question_callback (prompt, input)
+  {
+    global.status = "question";
+    if (!global.dialog)
+	dialog_setup();
+    else
+	dialog_opacity(1);
+  
+    prompt_setup(prompt);
+    bullets_opacity(0);
+    len = 0;
+    new_input = input;
+    for (index = 0; input && input.CharAt(index) != ""; index++)
+      {
+        len = index + 1;
+      }
+    text_factor = 0.8;
+    dialog.plaintext.image = Image.Text(new_input, 1, 1, 1, 1, "Noto Sans Mono");
+    if (Window.GetHeight() >= 1080)
+    {
+      dialog.plaintext.image = dialog.plaintext.image.Scale(dialog.plaintext.image.GetWidth() * dialog.entry.image.GetHeight() * text_factor / dialog.plaintext.image.GetHeight(), dialog.entry.image.GetHeight() * text_factor);
+    }
+    dialog.plaintext.sprite = Sprite(dialog.plaintext.image);
+    dialog.plaintext.x = dialog.entry.x + Window.GetWidth() * 8 / 1920;
+    trunc_len = 0;
+    while (dialog.plaintext.x + dialog.plaintext.image.GetWidth() >= dialog.enter.x)
+    {
+      trunc_len = trunc_len + 1;
+      new_input = input.SubString(trunc_len, len);
+      dialog.plaintext.image = Image.Text(new_input, 1, 1, 1, 1, "Noto Sans Mono");
+      if (Window.GetHeight() >= 1080)
+      {
+        dialog.plaintext.image = dialog.plaintext.image.Scale(dialog.plaintext.image.GetWidth() * dialog.entry.image.GetHeight() * text_factor / dialog.plaintext.image.GetHeight(), dialog.entry.image.GetHeight() * text_factor);
+      }
+      dialog.plaintext.sprite = Sprite(dialog.plaintext.image);
+      dialog.plaintext.x = dialog.entry.x + Window.GetWidth() * 8 / 1920;
+    }
+    dialog.plaintext.y = dialog.entry.y + dialog.entry.image.GetHeight() / 2 - dialog.plaintext.image.GetHeight() / 2;
+    dialog.plaintext.z = dialog.entry.z + 1;
+    dialog.plaintext.sprite.SetPosition(dialog.plaintext.x, dialog.plaintext.y, dialog.plaintext.z);
+  }
+
 Plymouth.SetDisplayNormalFunction(display_normal_callback);
 Plymouth.SetDisplayPasswordFunction(display_password_callback);
+Plymouth.SetDisplayQuestionFunction(display_question_callback);
 
 
 #----------------------------------------- Message --------------------------------
 
 message_sprite = Sprite();
-message_sprite.SetPosition(Window.GetX() + 10, Window.GetY() + 10, 10000);
 
 fun message_callback (text)
 {
   my_image = Image.Text(text, 1, 1, 1);
+  if (my_image.GetHeight() < Window.GetHeight() * 17 / 1080)
+  {
+    my_image = my_image.Scale(my_image.GetWidth() * Window.GetHeight() * 17 / 1080 / my_image.GetHeight(), Window.GetHeight() * 17 / 1080);
+  }
   message_sprite.SetImage(my_image);
+  message_sprite.SetPosition(Window.GetX() + Window.GetWidth()  / 2 - my_image.GetWidth() / 2, Window.GetY() + Window.GetHeight() * 13 / 16 - my_image.GetHeight() / 2, 10000);
 }
 
 Plymouth.SetMessageFunction(message_callback);
