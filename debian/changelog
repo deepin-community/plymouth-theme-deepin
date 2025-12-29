@@ -1,3 +1,10 @@
+plymouth-theme-deepin (2024.2500.6) unstable; urgency=medium
+
+  * add plymouth-themes
+  * fix: /usr/lib/x86_64-linux-gnu/plymouth/two-step.so does not exist
+
+ -- lichenggang <lichenggang@deepin.org>  Mon, 29 Dec 2025 10:25:43 +0800
+
 plymouth-theme-deepin (2024.2500.5) unstable; urgency=medium
 
   * Merge upstream version 25.
