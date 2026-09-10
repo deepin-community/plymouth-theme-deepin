@@ -1,3 +1,9 @@
+plymouth-theme-deepin (2024.2500.7) unstable; urgency=medium
+
+  * Rebuild with LTO enabled (dpkg vendor feature optimize/lto).
+
+ -- tunaichao <tunaichao@uniontech.com>  Thu, 10 Sep 2026 20:04:39 +0800
+
 plymouth-theme-deepin (2024.2500.6) unstable; urgency=medium
 
   * add plymouth-themes
